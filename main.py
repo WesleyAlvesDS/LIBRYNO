@@ -3,18 +3,17 @@ from registerscreen import Ui_MainWindow as uiRegS
 from passreplacescreen import Ui_Form as uiPasS
 from menuscreen import Ui_MainWindow as uiMenuS
 from PyQt5.QtCore import QProcess
-from PyQt5 import QtWidgets, QtGui
-from functions import *
-import webbrowser
-from api_isbn import set_isbn
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QVBoxLayout, QSizePolicy, QFrame
+from PyQt5.QtWidgets import QVBoxLayout, QSizePolicy
+from PyQt5 import QtWidgets, QtGui
 from matplotlib.figure import Figure
-import numpy as np
+from functions import *
+from api_isbn import set_isbn
 import pandas as pd
+import webbrowser
 import sys
 class LoginScreen(QtWidgets.QMainWindow, uiUseS):
-    def __init__(self):
+    def __init__(self): 
         super().__init__()
         self.setupUi(self)
         self.setWindowTitle('LIBRYNO - Login')
@@ -24,8 +23,7 @@ class LoginScreen(QtWidgets.QMainWindow, uiUseS):
         self.buttonEnt.clicked.connect(self._button_enter)
         self.buttonCad.clicked.connect(self._window_register)
         self.pass_replace.clicked.connect(self._window_replace_pass)
-        
-
+    
     def _button_enter(self):
         nomeUser, senhaUser = self._valueLogin()
         if not (nomeUser and senhaUser):
@@ -77,9 +75,8 @@ class ReplacePassScreen(QtWidgets.QWidget, uiPasS):
             return
         
         instance_connect_login = LoginColab._replacePassword(rpuser, rpsenha)
-        if instance_connect_login:
+        if instance_connect_login is None:
             self._button_return_Pass()
-            clear_line_edits(self,widget_type=QtWidgets.QLineEdit)
 
     def _value_input_RP(self):
         return self.inputUser_3.text(), self.inputPass_3.text(), self.inputPass_4.text()
@@ -118,10 +115,9 @@ class RegisterScreen(QtWidgets.QMainWindow, uiRegS):
                 self.parent._show_message('Problema com a senha', 'As senhas devem ser iguais', QMessageBox.Warning)
                 return
             
-            self.new_colab = CrudColab.Criar_colab(rnome, rnomeUsuario, rsenha)
-            if self.new_colab:
+            self.new_colab = CrudColab.Criar_colab(rnome, rnomeUsuario, rsenha)            
+            if self.new_colab is None:
                 self._button_voltar()
-                clear_line_edits(self,widget_type=QtWidgets.QLineEdit)
         except AttributeError as e:
             print(f'Erro na configuração do botão: {e}')
 
@@ -179,12 +175,7 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
         self.pushButton_Update_B.clicked.connect(lambda: self._modify_update_table(CrudLivros.Atualizar_livro, self.tableWidget_B))
         self.pushButton_Delete_Colab.clicked.connect(lambda: self._modify_delete_table(CrudColab.Deletar_colab, self.tableWidget_Colab))
         self.pushButton_Delete_Reader.clicked.connect(lambda: self._modify_delete_table(CrudLeitor.Deletar_leitor, self.tableWidget_Reader))
-        self.pushButton_Perfil_Colab.clicked.connect(self._viewPageUser)
         self.pushButton_Delete_B.clicked.connect(lambda: self._modify_delete_table(CrudLivros.Deletar_livro, self.tableWidget_B))
-        self.pushButton_Return_Info.clicked.connect(self._viewPageUser)
-        #self.pushButton_SaveP.clicked.connect(lambda:)
-        self.pushButton_Page_Home_Return.clicked.connect(lambda:self._navPagIndex(index=0))
-        self.pushButton_Page_Pass_Mod.clicked.connect(self._view_Page_Pass_Mod)
         self.pushButton_Export_Excel_B.clicked.connect(lambda:self._createExcel(tableB=True))
         self.pushButton_Export_Excel_Reader.clicked.connect(lambda:self._createExcel(tableR=True))
         self.pushButton_Seach_Home.clicked.connect(self._seach_table)
@@ -211,6 +202,7 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
     def _tab_book_and_clear(self):
         self.tabWidget_2.setCurrentIndex(1)
         clear_line_edits(self,widget_type=QtWidgets.QLineEdit)
+        clear_line_edits(self,widget_type=QtWidgets.QTextEdit)
     def _viewTableColab(self):
         if self.autenticado :
             self._loading_table_colab()
@@ -258,8 +250,6 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
             if not upDate:
                 self._show_message('Nenhum campo mudado', 'Não tem dados para atualizar', QMessageBox.Information)
                 return
-
-            # Atualização de dados
             for Data in upDate:
                 update_function(tuple(Data))
             if Data:
@@ -300,7 +290,7 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
                 return
             
             self.cadReader = CrudLeitor.Criar_leitor(Name_Reader,Tel_Reader,Email_Reader,CPF_Reader,Ide_Reader,CEP_Reader,Sc_Reader,Dn_Reader,Address_Reader,D_Cad_Reader)
-            if self.cadReader == True:
+            if self.cadReader is None:
                 clear_line_edits(self,widget_type=QtWidgets.QLineEdit)
         except Exception as e:
             print(f'problemas ao enviar os dados {e}')           
@@ -313,8 +303,9 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
             self._show_message('Campos Vazios','Os campos deverão ser preenchidos', QMessageBox.Warning)
             return
         self.cadBook = CrudLivros.Criar_livro(Num_Tombo_B,ISBn_B,Publisher_B,Year_E_B,Class_B,Num_Sheets_B,Title_B,Nome_Author,Volume_B,Date_Cad_B,Details_B)
-        if self.cadBook == True:
+        if self.cadBook is None:
             clear_line_edits(self,widget_type=QtWidgets.QLineEdit)
+            clear_line_edits(self,widget_type=QtWidgets.QTextEdit)
     def _value_input_Reader(self):
         return (self.lineEdit_Name_Reader.text(),
                 self.lineEdit_Tel_Reader.text(),
@@ -370,7 +361,7 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
         senha, ok = QtWidgets.QInputDialog.getText(
         self, 'Verificação de Senha','Digite a senha para acessar a tabela:', echo=QtWidgets.QLineEdit.Password)
         
-        if ok and senha == 'admin':  # Substitua 'senha_correta' pela senha que você deseja verificar
+        if ok and senha == 'admin':  
             self.autenticado = True
             return self._loading_table_colab()
         if not ok:
@@ -389,11 +380,6 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
     def _show_message(self,title,message,icon):
         boxMessage(title=title, message=message,button=QMessageBox.Ok,icon=icon)
         return True
-    def _viewPageUser(self):
-        self._navPagIndex(index=5)
-        self.container_5.setVisible(False)
-    def _view_Page_Pass_Mod(self):
-        self.container_5.setVisible(True)
     def _createExcel(self, tableB=False, tableR=False):
         conn = None
         cursor = None
@@ -404,17 +390,13 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
                 return
 
             cursor = conn.cursor()
-
-            # Para a tabela "Livros"
             if tableB:
                 cursor.execute('SELECT * FROM public."Livros"')
                 data = cursor.fetchall()
 
                 if data:
-                    # Abrir janela para escolher o local e nome do arquivo
                     file_path, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Salvar arquivo Excel", "", "Excel Files (*.xlsx)")
 
-                    # Verifica se o caminho foi selecionado
                     if file_path:
                         df = pd.DataFrame(data, columns=[desc[0] for desc in cursor.description])
                         df.to_excel(f'{file_path}', sheet_name='Tabela_Livros', index=False)
@@ -424,13 +406,11 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
                 else:
                     self._show_message('Aviso', 'Nenhum dado encontrado na tabela Livros', QMessageBox.Warning)
 
-            # Para a tabela "Leitor"
             if tableR:
                 cursor.execute('SELECT * FROM public."Leitor"')
                 data = cursor.fetchall()
 
                 if data:
-                    # Abrir janela para escolher o local e nome do arquivo
                     file_path, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Salvar arquivo Excel", "", "Excel Files (*.xlsx)")
 
                     if file_path:
@@ -450,40 +430,41 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
             if conn is not None:
                 conn.close()
     def _seach_table(self):
-        termo_pesquisa = self.input_Seach_Home.text().strip()  # Obtenha o termo digitado no campo de texto
-
-        # Verifique se o campo não está vazio
+        termo_pesquisa = self.input_Seach_Home.text().strip()  
         if not termo_pesquisa:
             self._show_message('Aviso', 'Por favor, digite um nome para pesquisar.', QMessageBox.Warning)
             return
-
         try:
             conn = Conectar()
             cursor = conn.cursor()
+            
+            queries_livros = {
+                'titulo': 'SELECT * FROM public."Livros" WHERE titulo_livro ILIKE %s',
+                'autor': 'SELECT * FROM public."Livros" WHERE autor ILIKE %s',
+                'classificacao': 'SELECT * FROM public."Livros" WHERE classificacao ILIKE %s',
+                'isbn': 'SELECT * FROM public."Livros" WHERE isbn ILIKE %s',
+                'n_tombo': 'SELECT * FROM public."Livros" WHERE n_tombo ILIKE %s'
+            }
 
-            # Suponha que você tenha duas tabelas, "Livros" e "Leitores"
-            query_livros = 'SELECT * FROM public."Livros" WHERE titulo_livro ILIKE %s'
-            query_leitores = 'SELECT * FROM public."Leitor" WHERE nome ILIKE %s'
-
-            # Tente encontrar o livro
-            cursor.execute(query_livros, (f"%{termo_pesquisa}%",))
-            resultado_livro = cursor.fetchone()  # Obtém o primeiro resultado
-
-            if resultado_livro:
-                # Se encontrou o livro, mude para a tela de Livros e selecione a linha
-                self.stackedWidget.setCurrentWidget(self.page_Lib)  # Muda para a página de Livros
-                self._selecionar_item_na_tabela(self.tableWidget_B, resultado_livro[0])  # Seleciona o item na tabela (assumindo que resultado_livro[0] é o ID)
-
+            for key, query in queries_livros.items():
+                cursor.execute(query, (f"%{termo_pesquisa}%",))
+                resultado_livro = cursor.fetchone()
+                if resultado_livro:
+                    self.stackedWidget.setCurrentWidget(self.page_Lib)
+                    self._selecionar_item_na_tabela(self.tableWidget_B, resultado_livro[0])
+                    break
             else:
-                # Se não encontrou no Livros, tenta na tabela Leitores
-                cursor.execute(query_leitores, (f"%{termo_pesquisa}%",))
-                resultado_leitor = cursor.fetchone()
-
-                if resultado_leitor:
-                    # Se encontrou o leitor, mude para a tela de Leitores e selecione a linha
-                    self.stackedWidget.setCurrentWidget(self.page_Reader)  # Muda para a página de Leitores
-                    self._selecionar_item_na_tabela(self.tableWidget_Reader, resultado_leitor[0])  # Seleciona o item na tabela (assumindo que resultado_leitor[0] é o ID)
-
+                queries_leitores = {
+                    'nome': 'SELECT * FROM public."Leitor" WHERE nome ILIKE %s',
+                    'cpf': 'SELECT * FROM public."Leitor" WHERE cpf ILIKE %s'
+                }
+                for key, query in queries_leitores.items():
+                    cursor.execute(query, (f"%{termo_pesquisa}%",))
+                    resultado_leitor = cursor.fetchone()
+                    if resultado_leitor:
+                        self.stackedWidget.setCurrentWidget(self.page_Reader)
+                        self._selecionar_item_na_tabela(self.tableWidget_Reader, resultado_leitor[0])
+                        break
                 else:
                     self._show_message('Aviso', 'Nenhum item encontrado com esse nome.', QMessageBox.Warning)
 
@@ -495,13 +476,13 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
                 cursor.close()
             if conn is not None:
                 conn.close()
+
     def _selecionar_item_na_tabela(self, table, item_id):
-        # Loop através da tabela para encontrar o item com o ID correspondente
         for row in range(table.rowCount()):
-            item = table.item(row, 0)  # Suponha que o ID esteja na primeira coluna (coluna 0)
+            item = table.item(row, 0)  
             if item and int(item.text()) == item_id:
-                table.selectRow(row)  # Seleciona a linha do item encontrado
-                table.scrollToItem(item)  # Rola até o item encontrado
+                table.selectRow(row) 
+                table.scrollToItem(item) 
                 break
                 from PyQt5.QtWidgets import QVBoxLayout
     def _view_data_analitycs(self):
@@ -512,116 +493,80 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
             result = cursor.fetchall()
             colunasR1 = [desc[0] for desc in cursor.description]
             df = pd.DataFrame(result, columns=colunasR1)
-
             cursor.execute('SELECT * FROM public."Leitor"')
             resultTwo = cursor.fetchall()
             colunasR2 = [desc[0] for desc in cursor.description]
             df2 = pd.DataFrame(resultTwo, columns=colunasR2)
-
             cursor.execute('SELECT * FROM public."Colab"')
             resultThree = cursor.fetchall()
             colunasR3 = [desc[0] for desc in cursor.description]
             df3 = pd.DataFrame(resultThree, columns=colunasR3)
-
         finally:
             cursor.close()
             conn.close()
-
         self.qtdVarB = df['id_livro'].count()
         self.anoEdicaoB = df['ano_edicao'].tolist()
-        self.qtdEdicaoB = df['ano_edicao'].count()
+        self.anoEdicaoB_count = df['ano_edicao'].value_counts()
         self.dataCadB = df['data_cadastro'].tolist()
-        self.qtddataCadB = df['data_cadastro'].count()
-        #tenho que contar as datas que são iguais e armazenar em uma variavel para usalá no futuro ////////////////////////
+        self.dataCadB_count = df['data_cadastro'].value_counts()
         self.qtdVarL = df2['id_leitor'].count()
-        self.school = df2['escolaridade'].tolist()
-        self.qtdschool = df2['escolaridade'].count()
+        self.schoolL = df2['escolaridade'].tolist()
+        self.schoolL_count = df2['escolaridade'].value_counts()
         self.dataCadL = df2['data_cadastro'].tolist()
-        self.qtddataCadL = df2['data_cadastro'].count()
-        #colocar as tabelas em ordem pelo numero tombo
+        self.dataCadL_count = df2['data_cadastro'].value_counts()
         self.qtdVarC = df3['id_colab'].count()
         self.lPie = [self.qtdVarB, self.qtdVarC, self.qtdVarL]
     def pie(self, data, frame):
-        
         fig = Figure(figsize=(2,2))
         canvas = FigureCanvas(fig)
         ax = fig.add_subplot(111, aspect='equal')
-    
         labels = ['Livros', 'Colaboradores', 'Leitores']
         ax.pie(data, labels=labels, autopct='%1.1f%%', startangle=90)
-        
-        # Ajustar layout do gráfico
         fig.tight_layout()
-        fig.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)  # Ajuste conforme necessário
-        
-        
-        # Verifique se o frame tem um layout, caso contrário, defina um
+        fig.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)  
         if frame.layout() is None:
             layout = QVBoxLayout()
-            layout.setContentsMargins(1, 1, 1, 1)  # Remove margens
-            layout.setSpacing(0)  # Remove espaçamento
+            layout.setContentsMargins(1, 1, 1, 1)  
+            layout.setSpacing(0) 
             frame.setLayout(layout)
-
-        # Limpar o conteúdo existente do QFrame e adicionar o gráfico
         self.clear_frame(frame)
         frame.layout().addWidget(canvas)
-
-        # Configurar o canvas para expandir e preencher o frame
         canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        canvas.updateGeometry()  # Atualizar geometria do canvas
+        canvas.updateGeometry()  
     def bar(self, x, y, labely, labelx, title, frame):
         fig = Figure(figsize=(2,2))
         canvas = FigureCanvas(fig)
         ax = fig.add_subplot(111)
-
         ax.bar(x, y)
         ax.set_ylabel(labely, fontsize=8)
         ax.set_xlabel(labelx, fontsize=8)
         ax.set_title(title, fontsize=10)
-
-        # Ajustar layout do gráfico com padding
-        fig.subplots_adjust(left=0.2, right=0.9, top=0.8, bottom=0.3)  # Ajuste conforme necessário
-
-        # Verifique se o frame tem um layout, caso contrário, defina um
+        fig.subplots_adjust(left=0.2, right=0.9, top=0.8, bottom=0.3)  
         if frame.layout() is None:
             layout = QVBoxLayout()
-            layout.setContentsMargins(0, 0, 0, 0)  # Remover margens ao redor do layout
-            layout.setSpacing(0)  # Remover espaçamento entre widgets
+            layout.setContentsMargins(0, 0, 0, 0)  
+            layout.setSpacing(0)  
             frame.setLayout(layout)
-
-        # Limpar o conteúdo existente do QFrame e adicionar o gráfico
         self.clear_frame(frame)
         frame.layout().addWidget(canvas)
-
-        # Configurar o canvas para expandir e preencher o frame
         canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        canvas.updateGeometry()  # Atualizar geometria do canvas
-
+        canvas.updateGeometry()  
     def line(self, x, y, title, frame):
         fig = Figure(figsize=(2,2))
         canvas = FigureCanvas(fig)
         ax = fig.add_subplot(111)
-
         ax.plot(x, y)
         ax.set_title(title, fontsize=10)
-
-        # Ajustar layout do gráfico com padding
-        fig.subplots_adjust(left=0.2, right=0.8, top=0.8, bottom=0.3)  # Ajuste conforme necessário
-
-        # Verifique se o frame tem um layout, caso contrário, defina um
+        fig.subplots_adjust(left=0.2, right=0.8, top=0.8, bottom=0.3)  
         if frame.layout() is None:
             layout = QVBoxLayout()
-            layout.setContentsMargins(0, 0, 0, 0)  # Remover margens ao redor do layout
-            layout.setSpacing(0)  # Remover espaçamento entre widgets
+            layout.setContentsMargins(0, 0, 0, 0)  
+            layout.setSpacing(0)  
             frame.setLayout(layout)
-
-        # Limpar o conteúdo existente do QFrame e adicionar o gráfico
         self.clear_frame(frame)
         frame.layout().addWidget(canvas)
-
-        # Configurar o canvas para expandir e preencher o frame
         canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        canvas.updateGeometry()  # Atualizar geometria do canvas
+        canvas.updateGeometry() 
     def clear_frame(self, frame):
         layout = frame.layout()
         if layout:
@@ -629,18 +574,42 @@ class HomeScreen(QtWidgets.QMainWindow, uiMenuS):
                 widget = layout.itemAt(i).widget()
                 if widget:
                     widget.deleteLater()
-
     def plot_all(self):
-        # Criar gráficos nos QFrames existentes
-        self.bar(x=self.anoEdicaoB, y=[self.qtdEdicaoB]*len(self.anoEdicaoB), labely='Quantidade de Livros', labelx='Ano de Edição', title='Livros pelo Ano de Edição', frame=self.frameG1)
-        self.line(x=self.dataCadB, y=[self.qtddataCadB]*len(self.dataCadB),title='Livros pela data de cadasto', frame=self.frameG2)
-        self.bar(x=self.school, y=[self.qtdschool]*len(self.school), labely='Quantidade de Leitores', labelx='Escolaridade', title='Escolaridade dos Leitores', frame=self.frameG3)
-        self.line(x=self.dataCadL, y=[self.qtddataCadL]*len(self.dataCadL),title='Leitores pela data de cadastro', frame=self.frameG4)
-        self.pie(data=self.lPie, frame=self.frameG5)
-
+        self.bar(
+            x=list(self.anoEdicaoB_count.index),  
+            y=self.anoEdicaoB_count.values,       
+            labely='Quantidade de Livros',
+            labelx='Ano de Edição',
+            title='Livros pelo Ano de Edição',
+            frame=self.frameG1
+        )
+        self.line(
+            x=list(self.dataCadB_count.index),    
+            y=self.dataCadB_count.values,         
+            title='Livros pela Data de Cadastro',
+            frame=self.frameG2
+        )
+        self.bar(
+            x=list(self.schoolL_count.index),     
+            y=self.schoolL_count.values,          
+            labely='Quantidade de Leitores',
+            labelx='Escolaridade',
+            title='Escolaridade dos Leitores',
+            frame=self.frameG3
+        )
+        self.line(
+            x=list(self.dataCadL_count.index),    
+            y=self.dataCadL_count.values,         
+            title='Leitores pela Data de Cadastro',
+            frame=self.frameG4
+        )
+        self.pie(
+            data=self.lPie,
+            frame=self.frameG5
+        )
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon('./img/icon.png'))
-    login_screen = HomeScreen()
+    login_screen = LoginScreen()
     login_screen.show()
     sys.exit(app.exec_())

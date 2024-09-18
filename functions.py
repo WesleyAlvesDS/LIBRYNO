@@ -35,11 +35,6 @@ class LoginColab():
                 cursor = conn.cursor()
                 cursor.execute('SELECT * FROM public."Colab" WHERE nome_usuario = %s AND senha = %s', (nome_usuario, senha))
                 result = cursor.fetchone()
-                """idC = result[0]
-                nomeC = result[1]
-                nomeUsuarioC = result[2]
-                senhaC = result[3]
-                """
                 return result is not None              
         except Exception as e :
             boxMessage(title='Cadastro negado',message=f'Erro ao enviar os dados\n\nProblemas com o banco de dados\nErro : {e}',button=QMessageBox.Ok,icon=QMessageBox.Critical)
@@ -108,11 +103,10 @@ class CrudColab():
         try:
             conn = Conectar()
             cursor = conn.cursor()
-            
-            # Atualização dos dados
+        
             cursor.execute(
                 'UPDATE public."Colab" SET nome = %s, nome_usuario = %s, senha = %s WHERE id_colab = %s',
-                (colab_data[1], colab_data[2], colab_data[3], colab_data[0])  # Assumindo que o ID está na primeira posição
+                (colab_data[1], colab_data[2], colab_data[3], colab_data[0]) 
             )
             conn.commit()
 
@@ -124,7 +118,6 @@ class CrudColab():
                 icon=QMessageBox.Critical
             )
         finally:
-            # Fechar o cursor e a conexão
             cursor.close()
             conn.close()
 
@@ -134,8 +127,6 @@ class CrudColab():
         try:
             conn = Conectar()
             cursor = conn.cursor()
-
-            # Corrigido: Passar id_colab como uma tupla
             cursor.execute('DELETE FROM public."Colab" WHERE id_colab = %s', (id_colab,))
 
             conn.commit()
@@ -147,7 +138,6 @@ class CrudColab():
                 cursor.close()
             if conn is not None:
                 conn.close()
-
 class CrudLeitor:
     @staticmethod
     def Criar_leitor(nome,telefone,email,cpf,identidade,cep,escolaridade,data_nascimento,endereco,data_cadastro):
@@ -207,7 +197,6 @@ class CrudLeitor:
             )
             print(e)
         finally:
-            # Fechar o cursor e a conexão
             cursor.close()
             conn.close()
 
@@ -278,7 +267,6 @@ class CrudLivros:
                 icon=QMessageBox.Critical
             )
         finally:
-            # Fechar o cursor e a conexão
             cursor.close()
             conn.close()
     @staticmethod
