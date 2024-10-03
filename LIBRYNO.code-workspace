@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "LIBRYNO",
+			"path": "."
+		},
+		{
+			"name": "img",
+			"path": "../../../Desktop/Libryno/img"
+		},
+		{
+			"name": "ui",
+			"path": "../../../Desktop/Libryno/ui"
+		}
+	],
+	"settings": {}
+}
