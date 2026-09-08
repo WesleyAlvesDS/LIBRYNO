@@ -112,7 +112,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='img/icon.png',
+    icon='img/logoicone.png',
 )
 
 pyz = PYZ(a.pure, a.zipped_data)
@@ -137,5 +137,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='img/icon.png',
+    icon='img/logoicone.png',
 )

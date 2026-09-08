@@ -65,7 +65,7 @@ class HomeScreen(QMainWindow):
         self.login_screen = login_screen
         self.setWindowTitle(t("home.title"))
         self.setMinimumSize(1100, 650)
-        self.setWindowIcon(QtGui.QIcon(Config.resource_path("img/icon.png")))
+        self.setWindowIcon(QtGui.QIcon(Config.resource_path("img/logoicone.png")))
         self.current_nav = 0
         self.autenticado_colab = False
         self._build_ui()
@@ -97,10 +97,20 @@ class HomeScreen(QMainWindow):
         # Logo area
         logo_frame = QFrame()
         logo_layout = QHBoxLayout(logo_frame)
-        logo_layout.setContentsMargins(16, 20, 16, 20)
-        logo_label = QLabel("📚 LIBRYNO")
-        logo_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #5CE1E6;")
-        logo_layout.addWidget(logo_label)
+        logo_layout.setContentsMargins(16, 14, 16, 14)
+        logo_layout.setSpacing(10)
+        logo_icon = QLabel()
+        logo_pixmap = QtGui.QPixmap(Config.resource_path("img/logoicone.png"))
+        if not logo_pixmap.isNull():
+            logo_pixmap = logo_pixmap.scaledToHeight(30, Qt.TransformationMode.SmoothTransformation)
+            logo_icon.setPixmap(logo_pixmap)
+        logo_layout.addWidget(logo_icon)
+        logo_text = QLabel("LIBRYNO")
+        logo_text.setStyleSheet(
+            "font-size: 17px; font-weight: bold; color: #5CE1E6; background: transparent;"
+        )
+        logo_layout.addWidget(logo_text)
+        logo_layout.addStretch()
         self.sidebar_layout.addWidget(logo_frame)
 
         self.sidebar_layout.addSpacing(10)

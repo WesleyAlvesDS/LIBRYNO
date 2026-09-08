@@ -4,6 +4,7 @@ import time
 
 from src.auth.ordob_client import client
 from src.auth.session import session
+from src.config import Config
 from src.utils.logger import logger
 
 
@@ -180,13 +181,15 @@ def auto_detect_premium() -> bool:
             return False
         
         # Procurar licença ativa para o produto libryno
+        # A API retorna 'product' como objeto relacionado: {"slug": ..., ...}
         for lic in licenses:
-            product = lic.get("product", "")
+            product = lic.get("product") or {}
+            product_slug = product.get("slug", "") if isinstance(product, dict) else str(product)
             status = lic.get("status", "")
-            license_key = lic.get("key", "")
-            
-            if (product == Config.ORDOB_PRODUCT_SLUG 
-                    and status in ("active", "trial") 
+            license_key = lic.get("license_key", "") or lic.get("key", "")
+
+            if (product_slug == Config.ORDOB_PRODUCT_SLUG
+                    and status in ("active", "trial")
                     and license_key):
                 logger.info("Auto-detected active license: {} (status: {})", 
                            license_key[:8] + "...", status)

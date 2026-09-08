@@ -1,10 +1,11 @@
 ; Libryno NSIS Installer Script
-; Gera: Libryno-Setup-${VERSION}.exe
+; Gera: Libryno-Setup.exe
 ; Compilar com: makensis libryno.nsi
 
 !include "LogicLib.nsh"
 !include "x64.nsh"
 !include "FileFunc.nsh"
+!include "MUI2.nsh"
 
 ; =============================================================================
 # Configurações Básicas
@@ -13,30 +14,30 @@
 !define APP_VERSION "2.0.0"
 !define APP_PUBLISHER "OrdoB"
 !define APP_URL "https://ordob.com/libryno"
-!define APP_EXE "libryno.exe"
+!define APP_EXE "Libryno.exe"
 
 ; Nome do instalador gerado
-OutFile "dist\Libryno-Setup-${APP_VERSION}.exe"
-InstallDir "$LOCALAPPDATA\Libryno"
+OutFile "..\..\dist\Libryno-Setup.exe"
+InstallDir "$LOCALAPPDATA\Programs\Libryno"
 InstallDirRegKey HKCU "Software\Libryno" "Install_Dir"
 
-; Request admin rights for installation
-RequestExecutionLevel admin
+; Instalação por usuário (sem necessidade de admin)
+RequestExecutionLevel user
 
 ; =============================================================================
 # Interface
 ; =============================================================================
-!define MUI_ICON "src\img\icon.ico"
-!define MUI_UNICON "src\img\icon.ico"
-!define MUI_WELCOMEFINISHPAGE_BITMAP "packaging\windows\banner.bmp"
+!define MUI_ICON "..\..\img\icon.ico"
+!define MUI_UNICON "..\..\img\icon.ico"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "banner.bmp"
 !define MUI_HEADERIMAGE
-!define MUI_HEADERIMAGE_BITMAP "packaging\windows\header.bmp"
-!define MUI_HEADERIMAGE_UNBITMAP "packaging\windows\header.bmp"
+!define MUI_HEADERIMAGE_BITMAP "header.bmp"
+!define MUI_HEADERIMAGE_UNBITMAP "header.bmp"
 
 ; Welcome page
 !insertmacro MUI_PAGE_WELCOME
 ; License page
-!insertmacro MUI_PAGE_LICENSE "packaging\windows\LICENSE.txt"
+!insertmacro MUI_PAGE_LICENSE "LICENSE.txt"
 ; Directory page
 !insertmacro MUI_PAGE_DIRECTORY
 ; Install page
@@ -57,60 +58,50 @@ RequestExecutionLevel admin
 ; =============================================================================
 # Variáveis
 ; =============================================================================
-Var StartMenuFolder
-Var CreateDesktopShortcut
-Var CreateStartMenuShortcut
-Var AutoStart
 Var PreviousVersion
 
 ; =============================================================================
 # Funções
 ; =============================================================================
 Function .onInit
-    ; Verifica se já existe versão instalada
-    ReadRegStr $PreviousVersion HKCU "Software\Libryno" "Version"
-    ${If} $PreviousVersion != ""
-        MessageBox MB_YESNO|MB_ICONQUESTION \
-            "Já existe uma versão do Libryno instalada (v$PreviousVersion).$\n$\n\
-            Deseja atualizar para a versão ${APP_VERSION}?$\n$\n\
-            (Seus dados locais serão preservados)" \
-            IDYES +2
-        Abort
-    ${EndIf}
-
-    ; Verifica se está rodando como admin
-    UserInfo::GetAccountType
-    Pop $0
-    ${If} $0 != "Admin"
-        MessageBox MB_ICONSTOP "O instalador requer privilégios de administrador. $\n$\nPor favor, execute como administrador."
-        Abort
+    ; Em modo silencioso (/S, auto-update) não pergunta nada
+    ${IfNot} ${Silent}
+        ; Verifica se já existe versão instalada
+        ReadRegStr $PreviousVersion HKCU "Software\Libryno" "Version"
+        ${If} $PreviousVersion != ""
+            MessageBox MB_YESNO|MB_ICONQUESTION \
+                "Já existe uma versão do Libryno instalada (v$PreviousVersion).$\n$\n\
+                Deseja atualizar para a versão ${APP_VERSION}?$\n$\n\
+                (Seus dados locais serão preservados)" \
+                IDYES +2
+            Abort
+        ${EndIf}
     ${EndIf}
 FunctionEnd
 
 Function .onInstSuccess
     ; Registra versão instalada
     WriteRegStr HKCU "Software\Libryno" "Version" "${APP_VERSION}"
-    WriteRegStr HKCU "Software\Libryno" "InstallDate" "$(GetDate)"
-    WriteRegStr HKCU "Software\Libryno" "InstallDir" "$INSTDIR"
+    WriteRegStr HKCU "Software\Libryno" "Install_Dir" "$INSTDIR"
 
     ; Adiciona ao Painel de Controle (Add/Remove Programs)
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
         "DisplayName" "Libryno"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
         "DisplayVersion" "${APP_VERSION}"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
         "Publisher" "${APP_PUBLISHER}"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
         "URLInfoAbout" "${APP_URL}"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
         "InstallLocation" "$INSTDIR"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
         "UninstallString" "$INSTDIR\uninstall.exe"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
-        "DisplayIcon" "$INSTDIR\libryno.exe"
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
+        "DisplayIcon" "$INSTDIR\${APP_EXE}"
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
         "NoModify" 1
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno" \
         "NoRepair" 1
 FunctionEnd
 
@@ -125,7 +116,7 @@ FunctionEnd
 
 Function un.onUninstSuccess
     ; Remove entradas do registro
-    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno"
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno"
     DeleteRegKey HKCU "Software\Libryno"
 
     ; Remove atalhos
@@ -143,51 +134,17 @@ FunctionEnd
 Section "Main" SEC_MAIN
     SetOutPath $INSTDIR
 
-    ; Binário principal
-    File "dist\${APP_EXE}"
-
-    ; DLLs necessárias (PyInstaller já empacota, mas garante)
-    File /r "dist\*.dll"
-    File /r "dist\*.pyd"
-
-    ; Recursos (ícones, imagens, temas, traduções)
-    File /r "src\img\*"
-    File /r "src\ui\themes\*"
-    File /r "src\ui\i18n\*"
+    ; Binário principal (PyInstaller onefile)
+    File /oname=${APP_EXE} "..\..\dist\libryno.exe"
 
     ; Cria desinstalador
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
     ; Atalhos
-    ${If} ${CreateStartMenuShortcut}
-        CreateDirectory "$SMPROGRAMS\Libryno"
-        CreateShortcut "$SMPROGRAMS\Libryno\Libryno.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\src\img\icon.ico"
-        CreateShortcut "$SMPROGRAMS\Libryno\Desinstalar Libryno.lnk" "$INSTDIR\uninstall.exe"
-    ${EndIf}
-
-    ${If} ${CreateDesktopShortcut}
-        CreateShortcut "$DESKTOP\Libryno.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\src\img\icon.ico"
-    ${EndIf}
-
-    ; Auto-start (opcional)
-    ${If} ${AutoStart}
-        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Libryno" '"$INSTDIR\${APP_EXE}" --minimized'
-    ${EndIf}
-SectionEnd
-
-; =============================================================================
-# Seções Opcionais
-; =============================================================================
-Section "Atalho no Menu Iniciar" SEC_STARTMENU
-    ${CreateStartMenuShortcut}
-SectionEnd
-
-Section "Atalho na Área de Trabalho" SEC_DESKTOP
-    ${CreateDesktopShortcut}
-SectionEnd
-
-Section "Iniciar com Windows" SEC_AUTOSTART
-    ${AutoStart}
+    CreateDirectory "$SMPROGRAMS\Libryno"
+    CreateShortcut "$SMPROGRAMS\Libryno\Libryno.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}"
+    CreateShortcut "$SMPROGRAMS\Libryno\Desinstalar Libryno.lnk" "$INSTDIR\uninstall.exe"
+    CreateShortcut "$DESKTOP\Libryno.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}"
 SectionEnd
 
 ; =============================================================================
@@ -197,14 +154,6 @@ Section "Uninstall"
     ; Remove arquivos
     Delete "$INSTDIR\${APP_EXE}"
     Delete "$INSTDIR\uninstall.exe"
-    Delete "$INSTDIR\*.dll"
-    Delete "$INSTDIR\*.pyd"
-
-    ; Remove pastas
-    RMDir /r "$INSTDIR\img"
-    RMDir /r "$INSTDIR\themes"
-    RMDir /r "$INSTDIR\i18n"
-    RMDir /r "$INSTDIR\__pycache__"
 
     ; Remove atalhos
     Delete "$SMPROGRAMS\Libryno\Libryno.lnk"
@@ -217,40 +166,8 @@ Section "Uninstall"
 
     ; Remove registro
     DeleteRegKey HKCU "Software\Libryno"
-    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno"
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Libryno"
 
     ; Tenta remover diretório de instalação
     RMDir $INSTDIR
 SectionEnd
-
-; =============================================================================
-# Funções Auxiliares
-; =============================================================================
-Function GetDate
-    ; Retorna data no formato YYYY-MM-DD
-    System::Call 'kernel32::GetLocalTime(i .r0)'
-    Pop $0
-    System::Call 'kernel32::GetLocalTime(i .r0)'
-    Pop $1
-    System::Call 'kernel32::GetLocalTime(i .r0)'
-    Pop $2
-    ; Formato: YYYY-MM-DD
-    Push $0
-    Push $1
-    Push $2
-    System::Call 'kernel32::GetLocalTime(i .r0)'
-    Pop $3
-    System::Call 'kernel32::GetLocalTime(i .r0)'
-    Pop $4
-    System::Call 'kernel32::GetLocalTime(i .r0)'
-    Pop $5
-    StrCpy $R0 "$3-$4-$5"
-FunctionEnd
-
-; =============================================================================
-# Recursos (banner, header, license)
-; =============================================================================
-; Coloque estes arquivos em packaging/windows/:
-; - banner.bmp (150x570)
-; - header.bmp (150x60)
-; - LICENSE.txt (Apache 2.0)

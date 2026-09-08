@@ -34,7 +34,7 @@ class Config:
     APP_DEBUG = os.getenv("APP_DEBUG", "false").lower() == "true"
 
     # Versionamento e Auto-updater
-    UPDATE_CHECK_URL = os.getenv("UPDATE_CHECK_URL", "https://api.github.com/repos/OrdoB/Libryno/releases/latest")
+    UPDATE_CHECK_URL = os.getenv("UPDATE_CHECK_URL", "https://api.github.com/repos/ordo-b/LIBRYNO/releases/latest")
     UPDATE_CHANNEL = os.getenv("UPDATE_CHANNEL", "stable")  # stable, beta, alpha
     AUTO_UPDATE_ENABLED = os.getenv("AUTO_UPDATE_ENABLED", "true").lower() == "true"
     UPDATE_CHECK_INTERVAL_HOURS = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "24"))

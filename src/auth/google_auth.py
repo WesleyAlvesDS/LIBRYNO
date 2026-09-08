@@ -1,28 +1,20 @@
 """Autenticação Google OAuth para desktop via servidor local.
 
 Fluxo:
-1. Servidor local escuta em porta aleatória
-2. Abre Google OAuth no navegador (via OrdoB)
-3. Após auth, Google redireciona para OrdoB
-4. OrdoB processa e redireciona para ordob.com
-5. Usuário copia token da página e cola no app
+1. Servidor local escuta em porta aleatória (localhost).
+2. Abre no navegador: api.ordob.com/api/v1/auth/google?callback=http://localhost:PORTA
+3. Usuário autentica com Google; a API redireciona para o servidor local.
+4. O token chega automaticamente — sem copiar/colar nada.
 
-Alternativa: servidor local captura callback se OrdoB suportar redirect customizado.
+Fallback: login por email/senha ou token manual seguem disponíveis na tela de login.
 """
-import json
 import threading
-import time
 import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs, urlencode
+from urllib.parse import urlparse, parse_qs
 
-from src.auth.ordob_client import client
+from src.config import Config
 from src.utils.logger import logger
-
-# URL do Google OAuth via OrdoB
-ORDOB_GOOGLE_AUTH_URL = "https://api.ordob.com/api/v1/auth/google"
-ORDOB_LOGIN_URL = "https://ordob.com/login"
-ORDOB_CADASTRO_URL = "https://ordob.com/cadastro"
 
 
 class _OAuthCallbackHandler(BaseHTTPRequestHandler):
@@ -39,15 +31,10 @@ class _OAuthCallbackHandler(BaseHTTPRequestHandler):
             _OAuthCallbackHandler.received_token[0] = params["token"][0]
             _OAuthCallbackHandler.token_received.set()
             self._respond_ok("✅ Autenticado! Voltando ao Libryno...")
-        elif "access_token" in params:
-            _OAuthCallbackHandler.received_token[0] = params["access_token"][0]
+        elif "error" in params:
+            _OAuthCallbackHandler.received_token[0] = ""
             _OAuthCallbackHandler.token_received.set()
-            self._respond_ok("✅ Autenticado! Voltando ao Libryno...")
-        elif "code" in params:
-            # Temos um code, mas precisamos trocar por token
-            _OAuthCallbackHandler.received_token[0] = f"code:{params['code'][0]}"
-            _OAuthCallbackHandler.token_received.set()
-            self._respond_ok("✅ Código recebido! Processando...")
+            self._respond_error("Autenticação falhou. Tente novamente.")
         else:
             self._respond_error("Parâmetro 'token' não encontrado na URL.")
 
@@ -95,9 +82,10 @@ class GoogleOAuthManager:
         self._stop_event = threading.Event()
 
     def start_server(self, timeout: int = 120) -> tuple[bool, str]:
-        """Inicia servidor local e abre Google OAuth.
+        """Inicia servidor local e abre Google OAuth no navegador.
 
-        Retorna (sucesso, token_ou_erro).
+        Retorna (sucesso, token_ou_erro). Em caso de sucesso, o segundo
+        elemento é o token; em falha, uma mensagem de erro.
         """
         import socket
 
@@ -107,7 +95,7 @@ class GoogleOAuthManager:
         self._port = sock.getsockname()[1]
         sock.close()
 
-        # Configurar handler
+        # Configurar estado do handler
         _OAuthCallbackHandler.token_received = threading.Event()
         _OAuthCallbackHandler.received_token = [None]
 
@@ -118,8 +106,12 @@ class GoogleOAuthManager:
 
         logger.info("OAuth server started on port {}", self._port)
 
-        # Abrir Google OAuth no navegador via OrdoB
-        webbrowser.open(ORDOB_GOOGLE_AUTH_URL)
+        # Abrir OAuth via OrdoB com callback localhost
+        auth_url = (
+            f"{Config.ORDOB_API_URL}/v1/auth/google"
+            f"?callback=http://localhost:{self._port}"
+        )
+        webbrowser.open(auth_url)
 
         # Esperar token ou timeout
         _OAuthCallbackHandler.token_received.wait(timeout=timeout)
@@ -132,21 +124,20 @@ class GoogleOAuthManager:
         if token:
             logger.info("OAuth token received")
             return True, token
-        else:
-            logger.warning("OAuth timeout - no token received")
-            return False, "Tempo esgotado. Tente novamente."
+        logger.warning("OAuth timeout - no token received")
+        return False, "Tempo esgotado. Tente novamente."
 
     def get_auth_url(self) -> str:
         """Retorna URL de autenticação Google via OrdoB."""
-        return ORDOB_GOOGLE_AUTH_URL
+        return f"{Config.ORDOB_API_URL}/v1/auth/google"
 
     def get_login_url(self) -> str:
         """Retorna URL de login OrdoB."""
-        return ORDOB_LOGIN_URL
+        return "https://ordob.com/login"
 
     def get_cadastro_url(self) -> str:
         """Retorna URL de cadastro OrdoB."""
-        return ORDOB_CADASTRO_URL
+        return "https://ordob.com/cadastro"
 
 
 # Instância global

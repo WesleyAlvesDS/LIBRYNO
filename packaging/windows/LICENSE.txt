@@ -1,0 +1,8 @@
+Libryno — Sistema de Gestão de Bibliotecas
+Copyright (c) 2026 OrdoB
+
+Este software é fornecido "COMO ESTÁ", sem garantia de qualquer tipo.
+O uso do Libryno está sujeito aos Termos de Serviço disponíveis em
+https://ordob.com/libryno
+
+OrdoB — contato@ordob.com

@@ -74,7 +74,7 @@ class LoginScreen(QMainWindow):
         self._settings = QSettings("OrdoB", "Libryno")
         self.setWindowTitle(t("login.title"))
         self.setFixedSize(750, 640)
-        self.setWindowIcon(QtGui.QIcon(Config.resource_path("img/icon.png")))
+        self.setWindowIcon(QtGui.QIcon(Config.resource_path("img/logoicone.png")))
         self._build_ui()
         self._restore_email()
         # Verificar servidor ao abrir
@@ -100,18 +100,17 @@ class LoginScreen(QMainWindow):
         left_layout.setAlignment(Qt.AlignCenter)
         left_layout.setContentsMargins(30, 40, 30, 40)
 
-        logo = QLabel("📚")
-        logo.setAlignment(Qt.AlignCenter)
-        logo.setStyleSheet("font-size: 64px; background: transparent;")
-        left_layout.addWidget(logo)
-
-        app_name = QLabel("LIBRYNO")
-        app_name.setAlignment(Qt.AlignCenter)
-        app_name.setStyleSheet(
-            "font-size: 36px; font-weight: bold; color: #5CE1E6; "
-            "background: transparent; margin-top: 10px;"
-        )
-        left_layout.addWidget(app_name)
+        # Logo (logotipo novo — logo + nome)
+        brand_logo = QLabel()
+        brand_logo.setAlignment(Qt.AlignCenter)
+        brand_pixmap = QtGui.QPixmap(Config.resource_path("img/logonome.png"))
+        if not brand_pixmap.isNull():
+            brand_pixmap = brand_pixmap.scaledToWidth(
+                230, Qt.TransformationMode.SmoothTransformation
+            )
+            brand_logo.setPixmap(brand_pixmap)
+        brand_logo.setStyleSheet("background: transparent;")
+        left_layout.addWidget(brand_logo)
 
         subtitle = QLabel(t("login.login_with_ordob"))
         subtitle.setAlignment(Qt.AlignCenter)
@@ -433,9 +432,11 @@ class LoginScreen(QMainWindow):
 
     def _on_login_error(self, msg_key: str):
         self._set_loading(False)
-        self._status_label.setText(t("login.server_online"))
+        # Erro de autenticação — o estado real do servidor é mostrado
+        # pelo health check; não force "online" aqui.
+        self._status_label.setText("")
         self._status_label.setStyleSheet(
-            "font-size: 12px; color: #44ff44; background: transparent;"
+            "font-size: 12px; background: transparent;"
         )
         # Mensagem de erro mais detalhada
         reply = QMessageBox.critical(
@@ -524,23 +525,45 @@ class LoginScreen(QMainWindow):
                 )
 
     def _login_with_ordob(self):
-        """Login via OrdoB.com — abre site e detecta sessão."""
+        """Login via navegador (Google OAuth) com callback automático localhost."""
         from src.auth.google_auth import google_auth
 
-        # Abrir OrdoB login
-        webbrowser.open(google_auth.get_login_url())
+        self._set_loading(True)
+        self._status_label.setText(t("login.authenticating"))
 
-        # Perguntar se usuário quer colar token
+        class _OAuthWorker(QThread):
+            finished = Signal(dict)
+            error = Signal(str)
+
+            def run(self):
+                ok, token_or_err = google_auth.start_server(timeout=180)
+                if not ok or not token_or_err:
+                    self.error.emit(token_or_err or "Autenticação cancelada.")
+                    return
+                user = client.get_user(token_or_err)
+                if user:
+                    self.finished.emit({"token": token_or_err, "user": user})
+                else:
+                    self.error.emit("Token recebido, mas inválido no servidor.")
+
+        self._oauth_worker = _OAuthWorker(self)
+        self._oauth_worker.finished.connect(self._on_token_success)
+        self._oauth_worker.error.connect(self._on_oauth_error)
+        self._oauth_worker.start()
+
+    def _on_oauth_error(self, msg: str):
+        """OAuth falhou (timeout/cancelado) — oferece fallback manual."""
+        self._set_loading(False)
+        self._status_label.setText("")
+
         reply = QMessageBox.question(
             self,
             "Entrar com OrdoB.com",
-            "O site do OrdoB abriu no navegador.\n\n"
-            "Se já está logado no OrdoB, copie seu TOKEN de API\n"
-            "e cole na próxima tela.\n\n"
-            "Se não tem conta, crie em ordob.com/cadastro\n\n"
-            "Deseja colar seu token agora?",
+            f"{msg}\n\n"
+            "Deseja inserir um token manualmente?\n"
+            "(Ou faça login com email e senha.)",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes,
+            QMessageBox.StandardButton.No,
         )
         if reply == QMessageBox.StandardButton.Yes:
             self._show_token_dialog()
@@ -554,10 +577,10 @@ class LoginScreen(QMainWindow):
             "Colar Token OrdoB",
             "Cole seu token de API do OrdoB:\n\n"
             "Para encontrar seu token:\n"
-            "1. Acesse ordob.com/login\n"
-            "2. Faça login com Google\n"
-            "3. Vá em Configurações > API Token\n"
-            "4. Copie e cole aqui",
+            "1. Acesse ordob.com/app/profile\n"
+            "2. Faça login com email/Google\n"
+            "3. Copie o token da seção de Token da API\n"
+            "4. Cole aqui",
             QLineEdit.Normal,
         )
         if ok and token.strip():

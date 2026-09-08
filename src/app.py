@@ -54,7 +54,7 @@ def run():
     _app = QtWidgets.QApplication(sys.argv)
     _app.setApplicationName(Config.APP_NAME)
     _app.setApplicationVersion(Config.APP_VERSION)
-    _app.setWindowIcon(QtGui.QIcon(Config.resource_path("img/icon.png")))
+    _app.setWindowIcon(QtGui.QIcon(Config.resource_path("img/logoicone.png")))
 
     _load_locale("pt_BR")
     _load_locale("en")
@@ -266,7 +266,7 @@ def _run_update_with_progress(info: dict):
                 "Erro na Atualização",
                 f"Falha ao atualizar: {message}\n\n"
                 "Você pode baixar manualmente em:\n"
-                f"https://github.com/OrdoB/Libryno/releases/latest"
+                f"https://github.com/ordo-b/LIBRYNO/releases/latest"
             )
 
     from src.updater import UpdateProgress
